@@ -10,7 +10,7 @@ Game::Game(const std::string &config)
 void Game::s_Render()
 {
     win.clear();
-    for (auto e : em.getEntities()) {
+    for (auto &e : em.getEntities()) {
         e->shape->circ.setPosition(e->transform->position.x, e->transform->position.y);
         
         e->transform->angle += 1.f;
