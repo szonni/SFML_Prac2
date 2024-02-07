@@ -62,9 +62,12 @@ void Game::run()
     spawnPlayer();
     
     while (is_running) {
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
-            win.close();
-            break;
+        sf::Event event;
+        while (win.pollEvent(event)) {
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
+                is_running = false;
+                win.close();
+            }
         }
         s_Input();
         s_Movement();

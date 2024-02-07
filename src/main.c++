@@ -1,6 +1,4 @@
 #include <iostream>
-#include "Entity.hpp"
-#include "EntityMananger.hpp"
 #include "Game.hpp"
 
 int main() {
