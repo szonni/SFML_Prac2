@@ -2,8 +2,6 @@
 #include <iostream>
 #include <fstream>
 
-Game::Game() {}
-
 Game::Game(const std::string &config)
 {
     init(config);
@@ -25,10 +23,16 @@ void Game::s_Render()
 
 void Game::s_Input()
 {
-   player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
-   player->input->down = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-   player->input->right = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-   player->input->left = sf::Keyboard::isKeyPressed(sf::Keyboard::A);
+    player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
+    player->input->down = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+    player->input->right = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+    player->input->left = sf::Keyboard::isKeyPressed(sf::Keyboard::A);
+
+    sf::Vector2i mousePos = sf::Mouse::getPosition();
+    Vec2 target(static_cast <int> (mousePos.x), static_cast <int> (mousePos.y));
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        spawnBullet(player, target);
+    }
 }
 
 void Game::s_Movement()
@@ -114,7 +118,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> e, const Vec2 &target)
 {
     auto bullet = em.addEntity("Bullet");
 
-    bullet->transform = std::make_shared <c_Transform> (target, Vec2(0,0), 0);
+    bullet->transform = std::make_shared <c_Transform> (Vec2(e->transform->position.x, e->transform->position.y), Vec2(0,0), 0);
 
     bullet->shape = std::make_shared <c_Shape> (10, 8, sf::Color::White, sf::Color::White, 0);
 

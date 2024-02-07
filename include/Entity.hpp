@@ -17,7 +17,6 @@ public:
     std::shared_ptr <c_Transform> transform;
     std::shared_ptr <c_Shape> shape;
     std::shared_ptr <c_Score> score;
-    std::shared_ptr <c_Name> name;
     std::shared_ptr <c_LifeSpan> life_span;
     std::shared_ptr <c_Collision> collision;
     std::shared_ptr <c_Input> input;
@@ -25,5 +24,6 @@ public:
     
     const std::string &returnTag() const;
     const size_t &returnId() const;
+    bool isDead() const;
     void destroy();
 };

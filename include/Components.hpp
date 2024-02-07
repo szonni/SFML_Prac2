@@ -14,10 +14,6 @@ public:
         : position(p), velocity(v), angle(a) {}
 };
 
-class c_Name {
-    std::string name = "non";
-};
-
 class c_Shape {
 
 public:

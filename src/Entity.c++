@@ -13,6 +13,11 @@ const size_t &Entity::returnId() const
     return id;
 }
 
+bool Entity::isDead() const
+{
+    return !is_alive;
+}
+
 void Entity::destroy()
 {
     is_alive = false;

@@ -23,4 +23,5 @@ public:
 
     E_Vec &getEntities();
     E_Vec &getEntities(const std::string &tag);
+    void removeDeadEntities(E_Vec &vec);
 };

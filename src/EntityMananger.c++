@@ -11,7 +11,7 @@ std::shared_ptr<Entity> EntityManager::addEntity(const std::string &tag)
 
 void EntityManager::update()
 {
-    for (auto e : wait_room) {
+    for (auto &e : wait_room) {
         entities.push_back(e);
         entity_map[e->tag].push_back(e);
     }
@@ -21,4 +21,18 @@ void EntityManager::update()
 E_Vec &EntityManager::getEntities()
 {
     return entities;
+}
+
+E_Vec &EntityManager::getEntities(const std::string &tag)
+{
+    return entity_map[tag];
+}
+
+void EntityManager::removeDeadEntities(E_Vec &vec)
+{
+    for (auto &e : vec) {
+        if (e->isDead()) {
+            vec.erase(std::remove(vec.begin(), vec.end(), e), vec.end());
+        }
+    }
 }
