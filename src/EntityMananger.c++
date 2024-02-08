@@ -37,9 +37,14 @@ E_Vec &EntityManager::getEntities(const std::string &tag)
 
 void EntityManager::removeDeadEntities(E_Vec &vec)
 {
-    for (auto &e : vec) {
-        if (e->isDead()) {
-            vec.erase(std::remove(vec.begin(), vec.end(), e), vec.end());
-        }
-    }
+    // Create a lambda function to check if an entity is dead
+    auto isDeadEntity = [](const std::shared_ptr<Entity> &entity) {
+        return entity->isDead();
+    };
+
+    // Use std::remove_if to move dead entities to the end of the vector
+    auto deadEntityIterator = std::remove_if(vec.begin(), vec.end(), isDeadEntity);
+
+    // Use vector's erase member function to remove dead entities from the vector
+    vec.erase(deadEntityIterator, vec.end());
 }

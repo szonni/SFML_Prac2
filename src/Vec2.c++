@@ -59,11 +59,11 @@ Vec2::Vec2(float x_in, float y_in)
         y /= v;
     }
 
-    float Vec2::dist(const Vec2 &v) const
+    float Vec2::dist_power2(const Vec2 &v) const
     {   
         float dx = v.x - x;
         float dy = v.y - y;
-        return std::sqrt(dx * dx + dy * dy);
+        return dx * dx + dy * dy;
     }
 
     void Vec2::normalize()

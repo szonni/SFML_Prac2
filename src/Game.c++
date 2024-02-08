@@ -61,6 +61,35 @@ void Game::s_EnemySpawner(const int &timer)
     }
 }
 
+void Game::s_Collision()
+{
+    for (auto b : em.getEntities("Bullet")) {
+        for (auto e : em.getEntities("Enemy")) {
+            float b_Radius = b->collision->radius;
+            float e_Radius = e->collision->radius;
+            sf::Vector2f bullet_middle =  b->shape->circ.getPosition();
+            sf::Vector2f enemy_middle = e->shape->circ.getPosition();
+            Vec2 b_pos(static_cast <float> (bullet_middle.x),static_cast <float> (bullet_middle.y));
+            Vec2 e_pos(static_cast <float> (enemy_middle.x), static_cast <float> (enemy_middle.y));
+            std::cout << "b_pos: " << b_pos.x << " " << b_pos.y << '\n';
+            std::cout << "e_pos: " << e_pos.x << " " << e_pos.y << '\n';
+            float Dist = e_pos.dist_power2(b_pos);
+            float Rad2 = (b_Radius + e_Radius) * (b_Radius + e_Radius);
+            std::cout << "Dist: " << Dist << "\n";
+            std::cout << "Rad2: " << Rad2 << '\n';
+            bool collide = Dist < Rad2;
+            switch (collide) {
+            case true:
+                b->destroy();
+                e->destroy();
+                break;
+            default:
+                break;
+            }
+        }
+    }
+}
+
 void Game::run()
 {
     spawnPlayer();
@@ -74,6 +103,8 @@ void Game::run()
             }
         }
         s_Input();
+        s_EnemySpawner(120);
+        s_Collision();
         s_Movement();
         s_Render();
         em.update();
@@ -96,7 +127,7 @@ void Game::spawnPlayer()
     //input
     entity->input = std::make_shared <c_Input> ();
     
-    //create entity
+    //create player
     player = entity;
 }
 
@@ -121,6 +152,8 @@ void Game::spawnBullet(std::shared_ptr<Entity> e, const Vec2 &target)
     bullet->transform = std::make_shared <c_Transform> (Vec2(e->transform->position.x, e->transform->position.y), Vec2(0,0), 0);
 
     bullet->shape = std::make_shared <c_Shape> (10, 8, sf::Color::White, sf::Color::White, 0);
+
+    bullet->collision = std::make_shared <c_Collision> (10);
 
 }
 

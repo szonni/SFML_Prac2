@@ -20,6 +20,6 @@ struct Vec2
     void operator *= (const float &v);
     void operator /= (const float &v);
 
-    float dist(const Vec2 &v) const;
+    float dist_power2(const Vec2 &v) const;
     void normalize();
 };
