@@ -32,5 +32,5 @@ public:
     void run();
     void spawnPlayer();
     void spawnEnemy(const float &x, const float &y, const float &radius, const float &speedX, const float &speedY, const float &angle, const sf::Color &fill, const sf::Color &outline, const int &verts, const float &thickness);
-    void spawnBullet(std::shared_ptr <Entity> e, const Vec2 &target);
+    void spawnBullet();
 };

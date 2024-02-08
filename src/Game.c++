@@ -23,20 +23,23 @@ void Game::s_Render()
 
 void Game::s_Input()
 {
+    sf::Event event;
+    
     player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
     player->input->down = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
     player->input->right = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
     player->input->left = sf::Keyboard::isKeyPressed(sf::Keyboard::A);
 
-    sf::Vector2i mousePos = sf::Mouse::getPosition();
-    Vec2 target(static_cast <int> (mousePos.x), static_cast <int> (mousePos.y));
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-        spawnBullet(player, target);
+    while (win.pollEvent(event)) {
+        if ((event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left)) {
+            spawnBullet();
+        }
     }
 }
 
 void Game::s_Movement()
-{
+{   
+    //Player Movement
     if (player->input->up) {
         player->transform->position.y -= player->transform->velocity.y;
     }
@@ -48,6 +51,14 @@ void Game::s_Movement()
     }
     if (player->input->right) {
         player->transform->position.x += player->transform->velocity.x;
+    }
+
+    //Bullet Movement
+
+
+    for (auto &bullet : em.getEntities("Bullet")) {
+        bullet->transform->position.x += bullet->transform->velocity.x;
+        bullet->transform->position.y += bullet->transform->velocity.y; 
     }
 }
 
@@ -63,28 +74,23 @@ void Game::s_EnemySpawner(const int &timer)
 
 void Game::s_Collision()
 {
-    for (auto b : em.getEntities("Bullet")) {
-        for (auto e : em.getEntities("Enemy")) {
-            float b_Radius = b->collision->radius;
+    for (auto &b : em.getEntities("Bullet")) {
+        float b_Radius = b->collision->radius;
+        for (auto &e : em.getEntities("Enemy")) {
             float e_Radius = e->collision->radius;
             sf::Vector2f bullet_middle =  b->shape->circ.getPosition();
-            sf::Vector2f enemy_middle = e->shape->circ.getPosition();
             Vec2 b_pos(static_cast <float> (bullet_middle.x),static_cast <float> (bullet_middle.y));
+            sf::Vector2f enemy_middle = e->shape->circ.getPosition();
             Vec2 e_pos(static_cast <float> (enemy_middle.x), static_cast <float> (enemy_middle.y));
-            std::cout << "b_pos: " << b_pos.x << " " << b_pos.y << '\n';
-            std::cout << "e_pos: " << e_pos.x << " " << e_pos.y << '\n';
-            float Dist = e_pos.dist_power2(b_pos);
+
+            float Dist = b_pos.dist_power2(e_pos);
             float Rad2 = (b_Radius + e_Radius) * (b_Radius + e_Radius);
-            std::cout << "Dist: " << Dist << "\n";
-            std::cout << "Rad2: " << Rad2 << '\n';
-            bool collide = Dist < Rad2;
-            switch (collide) {
-            case true:
-                b->destroy();
-                e->destroy();
-                break;
-            default:
-                break;
+            switch (Dist < Rad2) {
+                case true:
+                    b->destroy();
+                    e->destroy();
+                default:
+                    break;
             }
         }
     }
@@ -95,13 +101,11 @@ void Game::run()
     spawnPlayer();
     
     while (is_running) {
-        sf::Event event;
-        while (win.pollEvent(event)) {
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-                is_running = false;
-                win.close();
-            }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+            win.close();
+            break;
         }
+
         s_Input();
         s_EnemySpawner(120);
         s_Collision();
@@ -145,16 +149,26 @@ void Game::spawnEnemy(const float &x, const float &y, const float &radius, const
     lastEnemySpawnTime = currentFrame;
 }
 
-void Game::spawnBullet(std::shared_ptr<Entity> e, const Vec2 &target)
+void Game::spawnBullet()
 {
     auto bullet = em.addEntity("Bullet");
 
-    bullet->transform = std::make_shared <c_Transform> (Vec2(e->transform->position.x, e->transform->position.y), Vec2(0,0), 0);
+    bullet->transform = std::make_shared <c_Transform> (Vec2(player->transform->position.x, player->transform->position.y), Vec2(0,0), 0);
 
     bullet->shape = std::make_shared <c_Shape> (10, 8, sf::Color::White, sf::Color::White, 0);
 
     bullet->collision = std::make_shared <c_Collision> (10);
 
+    Vec2 target(static_cast <float> (sf::Mouse::getPosition(win).x), static_cast <float> (sf::Mouse::getPosition(win).y));
+    Vec2 player_pos(player->transform->position.x, player->transform->position.y);
+
+    Vec2 Dist = target - player_pos;
+    Dist.normalize();
+
+    //bullet speed
+    Dist *= 15.f;
+
+    bullet->transform->velocity = Dist;
 }
 
 void Game::init(const std::string &path)
