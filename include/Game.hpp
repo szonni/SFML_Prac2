@@ -24,7 +24,7 @@ public:
     Game(const std::string &config);
 
     void s_Render();
-    void s_Input();
+    void s_Input(sf::Event event);
     void s_Movement();
     void s_EnemySpawner(const int &timer);
     void s_Collision();

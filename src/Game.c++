@@ -1,5 +1,7 @@
 #include "Game.hpp"
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 #include <fstream>
 
 Game::Game(const std::string &config)
@@ -21,18 +23,32 @@ void Game::s_Render()
     win.display();
 }
 
-void Game::s_Input()
-{
-    sf::Event event;
-    
-    player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
-    player->input->down = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
-    player->input->right = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-    player->input->left = sf::Keyboard::isKeyPressed(sf::Keyboard::A);
-
+void Game::s_Input(sf::Event event)
+{   
     while (win.pollEvent(event)) {
-        if ((event.type == sf::Event::MouseButtonPressed) && (event.mouseButton.button == sf::Mouse::Left)) {
-            spawnBullet();
+
+        if (is_paused) {
+            if(event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
+                is_paused = false;
+                std::cout << "Unpaused." << '\n';
+                std::cout << "status: " << is_paused << '\n';
+            }
+        } else {
+            player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
+            player->input->down = sf::Keyboard::isKeyPressed(sf::Keyboard::S);
+            player->input->right = sf::Keyboard::isKeyPressed(sf::Keyboard::D);
+            player->input->left = sf::Keyboard::isKeyPressed(sf::Keyboard::A);
+            
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
+                is_paused = true;
+                std::cout << "Paused." << '\n';
+                std::cout << "status: " << is_paused << '\n';
+            }
+        }
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.mouseButton.button == sf::Mouse::Left){
+                spawnBullet();
+            }
         }
     }
 }
@@ -54,8 +70,6 @@ void Game::s_Movement()
     }
 
     //Bullet Movement
-
-
     for (auto &bullet : em.getEntities("Bullet")) {
         bullet->transform->position.x += bullet->transform->velocity.x;
         bullet->transform->position.y += bullet->transform->velocity.y; 
@@ -64,6 +78,7 @@ void Game::s_Movement()
 
 void Game::s_EnemySpawner(const int &timer)
 {
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
     float ex = std::rand() % win.getSize().x;
     float ey = std::rand() % win.getSize().y;
     if (currentFrame % timer == 0 && currentFrame > 0) {
@@ -99,19 +114,21 @@ void Game::s_Collision()
 void Game::run()
 {
     spawnPlayer();
-    
     while (is_running) {
+        sf::Event event;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
             win.close();
             break;
         }
-
-        s_Input();
-        s_EnemySpawner(120);
-        s_Collision();
-        s_Movement();
-        s_Render();
         em.update();
+        s_Input(event);
+        
+        if (!is_paused) {
+            s_EnemySpawner(60);
+            s_Movement();
+            s_Collision();
+        }
+        s_Render();
         currentFrame++;
     }
 
