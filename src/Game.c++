@@ -1,6 +1,5 @@
 #include "Game.hpp"
 #include <iostream>
-#include <cstdlib>
 #include <ctime>
 #include <fstream>
 
@@ -30,8 +29,6 @@ void Game::s_Input(sf::Event event)
         if (is_paused) {
             if(event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
                 is_paused = false;
-                std::cout << "Unpaused." << '\n';
-                std::cout << "status: " << is_paused << '\n';
             }
         } else {
             player->input->up = sf::Keyboard::isKeyPressed(sf::Keyboard::W);
@@ -41,10 +38,9 @@ void Game::s_Input(sf::Event event)
             
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
                 is_paused = true;
-                std::cout << "Paused." << '\n';
-                std::cout << "status: " << is_paused << '\n';
             }
         }
+
         if (event.type == sf::Event::MouseButtonPressed) {
             if (event.mouseButton.button == sf::Mouse::Left){
                 spawnBullet();
@@ -74,16 +70,26 @@ void Game::s_Movement()
         bullet->transform->position.x += bullet->transform->velocity.x;
         bullet->transform->position.y += bullet->transform->velocity.y; 
     }
+
+    //Enemy Movement
+    for (auto &enemy : em.getEntities("Enemy")) {
+        enemy->transform->position.x += enemy->transform->velocity.x;
+        enemy->transform->position.y += enemy->transform->velocity.y;
+    }
 }
 
 void Game::s_EnemySpawner(const int &timer)
 {
-    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    std::srand(std::time(nullptr));
     float ex = std::rand() % win.getSize().x;
     float ey = std::rand() % win.getSize().y;
+    
+    float rando1 = 2 + std::rand() % 3;
+    float rando2 = 2 + std::rand() % 3;
+    
     if (currentFrame % timer == 0 && currentFrame > 0) {
         lastEnemySpawnTime = currentFrame - lastEnemySpawnTime;
-        spawnEnemy(ex, ey, 30, 3.2, 2.5, 0.f, sf::Color::Cyan, sf::Color::Yellow, 3, 4);
+        spawnEnemy(ex, ey, 30, rando1, rando2, 0.f, sf::Color::Cyan, sf::Color::Yellow, 3, 4);
     }
 }
 
@@ -100,13 +106,25 @@ void Game::s_Collision()
 
             float Dist = b_pos.dist_power2(e_pos);
             float Rad2 = (b_Radius + e_Radius) * (b_Radius + e_Radius);
-            switch (Dist < Rad2) {
-                case true:
-                    b->destroy();
-                    e->destroy();
-                default:
-                    break;
+            if (Dist < Rad2) {
+                e->destroy();
+                b->destroy();
             }
+        }
+    }
+    
+    for (auto &b : em.getEntities("Enemy")) {
+        if (b->shape->circ.getPosition().x - b->collision->radius < 0.f) {
+            b->transform->velocity.x *= -1;
+        }
+        if (b->shape->circ.getPosition().x + b->collision->radius > static_cast <float> (win.getSize().x)) {
+            b->transform->velocity.x *= -1;
+        }
+        if (b->shape->circ.getPosition().y - b->collision->radius < 0.f) {
+            b->transform->velocity.y *= -1;
+        }
+        if (b->shape->circ.getPosition().y + b->collision->radius > static_cast <float> (win.getSize().y)) {
+            b->transform->velocity.y *= -1;
         }
     }
 }
@@ -125,8 +143,8 @@ void Game::run()
         
         if (!is_paused) {
             s_EnemySpawner(60);
-            s_Movement();
             s_Collision();
+            s_Movement();
         }
         s_Render();
         currentFrame++;
