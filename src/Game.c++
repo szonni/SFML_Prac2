@@ -52,16 +52,16 @@ void Game::s_Input(sf::Event event)
 void Game::s_Movement()
 {   
     //Player Movement
-    if (player->input->up) {
+    if (player->input->up && (player->shape->circ.getPosition().y - player->collision->radius > 0.f)) {
         player->transform->position.y -= player->transform->velocity.y;
     }
-    if (player->input->down) {
+    if (player->input->down && (player->shape->circ.getPosition().y + player->collision->radius < static_cast <float> (win.getSize().y))) {
         player->transform->position.y += player->transform->velocity.y;
     }
-    if (player->input->left) {
+    if (player->input->left && (player->shape->circ.getPosition().x - player->collision->radius > 0.f)) {
         player->transform->position.x -= player->transform->velocity.x;
     }
-    if (player->input->right) {
+    if (player->input->right && (player->shape->circ.getPosition().x + player->collision->radius < static_cast <float> (win.getSize().x))) {
         player->transform->position.x += player->transform->velocity.x;
     }
 
