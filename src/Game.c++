@@ -80,7 +80,6 @@ void Game::s_Movement()
 
 void Game::s_EnemySpawner(const int &timer)
 {
-    std::srand(std::time(nullptr));
     float ex = std::rand() % win.getSize().x;
     float ey = std::rand() % win.getSize().y;
     
@@ -132,8 +131,10 @@ void Game::s_Collision()
 void Game::run()
 {
     spawnPlayer();
+    std::cout << "HELLO: " << E_config.Interval;
     while (is_running) {
         sf::Event event;
+        std::srand(std::time(nullptr));
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
             win.close();
             break;
@@ -142,7 +143,7 @@ void Game::run()
         s_Input(event);
         
         if (!is_paused) {
-            s_EnemySpawner(60);
+            s_EnemySpawner(E_config.Interval);
             s_Collision();
             s_Movement();
         }
@@ -208,6 +209,44 @@ void Game::spawnBullet()
 
 void Game::init(const std::string &path)
 {
+    //initialized file reader
+    std::ifstream file(path);
+    
+    //Handle file opening
+    if(!file.is_open()) {
+        std::cerr << "Can't open file." << std::endl;
+        return;
+    }
+
     win.create(sf::VideoMode(1280, 720), "Real Game");
     win.setFramerateLimit(60);
+    
+    std::string type, font_path;
+    int font_size, FR, FG, FB;
+    
+    //Read config
+    while (file >> type) {
+        std::cout << type << '\n';
+        if (type == "Font") {
+            file >> font_path >> font_size >> FR >> FG >> FB;
+            if (!font.loadFromFile(font_path)) {
+                std::cerr << "Failed to load font." << std::endl;
+                return;
+            } else {
+                text.setFont(font);
+                text.setCharacterSize(font_size);
+                text.setFillColor(sf::Color (FR, FG, FB));
+            }
+        }
+        if (type == "Player") {
+            file >> P_config.S_rad >> P_config.C_rad >> P_config.S >> P_config.Fill_R >> P_config.Fill_G >> P_config.Fill_B >> P_config.Outline_R >> P_config.Outline_G >> P_config.Outline_B >> P_config.Outline_T >> P_config.Verts;
+        }
+        if (type == "Enemy") {
+            file >> E_config.S_rad >> E_config.C_rad >> E_config.SpeedMin >> E_config.SpeedMax >> E_config.Outline_R >> E_config.Outline_G >> E_config.Outline_B >> E_config.Outline_T >> E_config.VertMin >> E_config.VertMax >> E_config.L_Span >> E_config.Interval;
+        }
+        if (type == "Bullet") {
+            file >> B_config.S_rad >> B_config.C_rad >> B_config.S >> B_config.Fill_R >> B_config.Fill_G >> B_config.Fill_B >> B_config.Outline_R >> B_config.Outline_G >> B_config.Outline_B >> B_config.Outline_T >> B_config.Verts >> B_config.L_Span;
+        }
+    }
 }
+
