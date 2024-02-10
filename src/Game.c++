@@ -14,7 +14,7 @@ void Game::s_Render()
     for (auto &e : em.getEntities()) {
         e->shape->circ.setPosition(e->transform->position.x, e->transform->position.y);
         
-        e->transform->angle += 1.f;
+        
         e->shape->circ.setRotation(e->transform->angle);
         
         win.draw(e->shape->circ);
@@ -26,6 +26,11 @@ void Game::s_Input(sf::Event event)
 {   
     while (win.pollEvent(event)) {
 
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
+            win.close();
+            is_running = false;
+        }
+        
         if (is_paused) {
             if(event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
                 is_paused = false;
@@ -75,6 +80,10 @@ void Game::s_Movement()
     for (auto &enemy : em.getEntities("Enemy")) {
         enemy->transform->position.x += enemy->transform->velocity.x;
         enemy->transform->position.y += enemy->transform->velocity.y;
+    }
+
+    for (auto &e : em.getEntities()) {
+        e->transform->angle += 1.f;
     }
 }
 
@@ -131,14 +140,10 @@ void Game::s_Collision()
 void Game::run()
 {
     spawnPlayer();
-    std::cout << "HELLO: " << E_config.Interval;
     while (is_running) {
         sf::Event event;
         std::srand(std::time(nullptr));
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
-            win.close();
-            break;
-        }
+        
         em.update();
         s_Input(event);
         
@@ -212,7 +217,7 @@ void Game::init(const std::string &path)
     //initialized file reader
     std::ifstream file(path);
     
-    //Handle file opening
+    //handle file opening
     if(!file.is_open()) {
         std::cerr << "Can't open file." << std::endl;
         return;
@@ -224,9 +229,8 @@ void Game::init(const std::string &path)
     std::string type, font_path;
     int font_size, FR, FG, FB;
     
-    //Read config
+    //read config
     while (file >> type) {
-        std::cout << type << '\n';
         if (type == "Font") {
             file >> font_path >> font_size >> FR >> FG >> FB;
             if (!font.loadFromFile(font_path)) {
