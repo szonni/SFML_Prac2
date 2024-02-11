@@ -36,6 +36,7 @@ public:
     void s_Movement();
     void s_EnemySpawner(const int &timer);
     void s_Collision();
+    void s_LifeSpanInit();
 
     void run();
     void spawnPlayer();
