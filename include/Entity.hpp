@@ -11,7 +11,7 @@ class Entity {
     const std::string tag = "Null_Tag";
     bool is_alive = true;
     
-    Entity(const size_t &id, const std::string &tag);
+    Entity(const size_t &in_id, const std::string &in_tag);
 
 public:
     std::shared_ptr <c_Transform> transform;

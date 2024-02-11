@@ -89,15 +89,9 @@ void Game::s_Movement()
 
 void Game::s_EnemySpawner(const int &timer)
 {
-    float ex = std::rand() % win.getSize().x;
-    float ey = std::rand() % win.getSize().y;
-    
-    float rando1 = 2 + std::rand() % 3;
-    float rando2 = 2 + std::rand() % 3;
-    
     if (currentFrame % timer == 0 && currentFrame > 0) {
         lastEnemySpawnTime = currentFrame - lastEnemySpawnTime;
-        spawnEnemy(ex, ey, 30, rando1, rando2, 0.f, sf::Color::Cyan, sf::Color::Yellow, 3, 4);
+        spawnEnemy();
     }
 }
 
@@ -150,10 +144,10 @@ void Game::run()
         if (!is_paused) {
             s_EnemySpawner(E_config.Interval);
             s_Collision();
-            s_Movement();
+            //s_Movement();
+            currentFrame++;
         }
         s_Render();
-        currentFrame++;
     }
 
 }
@@ -176,15 +170,32 @@ void Game::spawnPlayer()
     player = entity;
 }
 
-void Game::spawnEnemy(const float &x, const float &y, const float &radius, const float &speedX, const float &speedY, const float &angle, const sf::Color &fill, const sf::Color &outline, const int &verts, const float &thickness)
+void Game::spawnEnemy()
 {
     auto entity = em.addEntity("Enemy");
+    
+    entity->collision = std::make_shared <c_Collision> (E_config.C_rad);
 
-    entity->transform = std::make_shared <c_Transform>(Vec2(x, y), Vec2(speedX, speedY), angle);
+    //random vertex number
+    int verts = E_config.VertMin + std::rand() % E_config.VertMax;
+    
+    //random fill color;
+    unsigned int RF = std::rand() % 255;
+    unsigned int GF = std::rand() % 255;
+    unsigned int BF = std::rand() % 255;
+    sf::Color color = sf::Color (RF, GF, BF);
 
-    entity->shape = std::make_shared <c_Shape>(radius, verts, sf::Color (fill), sf::Color (outline), thickness);
+    entity->shape = std::make_shared <c_Shape> (E_config.S_rad, verts, sf::Color (color), 
+    sf::Color (E_config.Outline_R, E_config.Outline_G, E_config.Outline_B), E_config.Outline_T);
+    
+    float ex = entity->collision->radius + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX) / (static_cast <float> (win.getSize().x) - 2.f * entity->collision->radius));
+    float ey = entity->collision->radius + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX) / (static_cast <float> (win.getSize().y) - 2.f * entity->collision->radius));
+    
+    float rando1 = 2 + std::rand() % 3;
+    float rando2 = 2 + std::rand() % 3;
+    
 
-    entity->collision = std::make_shared <c_Collision>(radius);
+    entity->transform = std::make_shared <c_Transform> (Vec2(ex, ey), Vec2(rando1, rando2), 0);
 
     //record the frame that the enemy spawn
     lastEnemySpawnTime = currentFrame;
@@ -196,9 +207,12 @@ void Game::spawnBullet()
 
     bullet->transform = std::make_shared <c_Transform> (Vec2(player->transform->position.x, player->transform->position.y), Vec2(0,0), 0);
 
-    bullet->shape = std::make_shared <c_Shape> (10, 8, sf::Color::White, sf::Color::White, 0);
+    bullet->shape = std::make_shared <c_Shape> (B_config.S_rad, B_config.C_rad, sf::Color (B_config.Fill_R, B_config.Fill_G, B_config.Fill_B),
+    sf::Color (B_config.Outline_R, B_config.Outline_G, B_config.Outline_B), B_config.Outline_T);
 
-    bullet->collision = std::make_shared <c_Collision> (10);
+    bullet->collision = std::make_shared <c_Collision> (B_config.C_rad);
+
+    bullet->life_span = std::make_shared <c_LifeSpan> (B_config.L_Span);
 
     Vec2 target(static_cast <float> (sf::Mouse::getPosition(win).x), static_cast <float> (sf::Mouse::getPosition(win).y));
     Vec2 player_pos(player->transform->position.x, player->transform->position.y);
@@ -243,13 +257,16 @@ void Game::init(const std::string &path)
             }
         }
         if (type == "Player") {
-            file >> P_config.S_rad >> P_config.C_rad >> P_config.S >> P_config.Fill_R >> P_config.Fill_G >> P_config.Fill_B >> P_config.Outline_R >> P_config.Outline_G >> P_config.Outline_B >> P_config.Outline_T >> P_config.Verts;
+            file >> P_config.S_rad >> P_config.C_rad >> P_config.S >> P_config.Fill_R >> P_config.Fill_G >> P_config.Fill_B >> 
+            P_config.Outline_R >> P_config.Outline_G >> P_config.Outline_B >> P_config.Outline_T >> P_config.Verts;
         }
         if (type == "Enemy") {
-            file >> E_config.S_rad >> E_config.C_rad >> E_config.SpeedMin >> E_config.SpeedMax >> E_config.Outline_R >> E_config.Outline_G >> E_config.Outline_B >> E_config.Outline_T >> E_config.VertMin >> E_config.VertMax >> E_config.L_Span >> E_config.Interval;
+            file >> E_config.S_rad >> E_config.C_rad >> E_config.SpeedMin >> E_config.SpeedMax >> E_config.Outline_R >> E_config.Outline_G >> 
+            E_config.Outline_B >> E_config.Outline_T >> E_config.VertMin >> E_config.VertMax >> E_config.L_Span >> E_config.Interval;
         }
         if (type == "Bullet") {
-            file >> B_config.S_rad >> B_config.C_rad >> B_config.S >> B_config.Fill_R >> B_config.Fill_G >> B_config.Fill_B >> B_config.Outline_R >> B_config.Outline_G >> B_config.Outline_B >> B_config.Outline_T >> B_config.Verts >> B_config.L_Span;
+            file >> B_config.S_rad >> B_config.C_rad >> B_config.S >> B_config.Fill_R >> B_config.Fill_G >> B_config.Fill_B >> 
+            B_config.Outline_R >> B_config.Outline_G >> B_config.Outline_B >> B_config.Outline_T >> B_config.Verts >> B_config.L_Span;
         }
     }
 }
