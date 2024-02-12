@@ -3,9 +3,9 @@
 #include "EntityMananger.hpp"
 #include <SFML/Graphics.hpp>
 
-struct Player {int S_rad, C_rad, Outline_T, Verts; float S; unsigned int Fill_R, Fill_G, Fill_B, Outline_R, Outline_G, Outline_B;};
-struct Enemy {int S_rad, C_rad, Outline_T, VertMin, VertMax, L_Span, Interval; float SpeedMin, SpeedMax; unsigned int Outline_R, Outline_G, Outline_B;};
-struct Bullet {int S_rad, C_rad, Outline_T, Verts, L_Span; float S; unsigned int Fill_R, Fill_G, Fill_B, Outline_R, Outline_G, Outline_B;};
+struct Player {int S_rad, C_rad, Outline_T, Verts = 0; float S = 0; unsigned int Fill_R, Fill_G, Fill_B, Outline_R, Outline_G, Outline_B = 0;};
+struct Enemy {int S_rad, C_rad, Outline_T, VertMin, VertMax, L_Span, Interval = 0; float SpeedMin, SpeedMax = 0; unsigned int Outline_R, Outline_G, Outline_B = 0;};
+struct Bullet {int S_rad, C_rad, Outline_T, Verts, L_Span = 0; float S = 0; unsigned int Fill_R, Fill_G, Fill_B, Outline_R, Outline_G, Outline_B = 0;};
 
 
 class Game {
@@ -34,12 +34,13 @@ public:
     void s_Render();
     void s_Input(sf::Event event);
     void s_Movement();
-    void s_EnemySpawner(const int &timer);
+    void s_EnemySpawner();
     void s_Collision();
     void s_LifeSpanInit();
 
     void run();
     void spawnPlayer();
     void spawnEnemy();
+    void spawnSmallEnemy();
     void spawnBullet();
 };

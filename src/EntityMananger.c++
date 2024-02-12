@@ -15,6 +15,7 @@ void EntityManager::update()
         entities.push_back(e);
         entity_map[e->tag].push_back(e);
     }
+    wait_room.clear();
 
     //remove dead entities from E_Vec
     removeDeadEntities(entities);
@@ -22,7 +23,6 @@ void EntityManager::update()
     for (auto &[tag, E_Vec] : entity_map) {
         removeDeadEntities(E_Vec);
     }
-    wait_room.clear();
 }
 
 E_Vec &EntityManager::getEntities()
