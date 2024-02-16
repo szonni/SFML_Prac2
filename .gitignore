@@ -1,3 +1,9 @@
 /.vscode
 /Makefile
 main
+*.exe
+CMakeLists.txt
+*.json
+.cache
+build
+*.ps1

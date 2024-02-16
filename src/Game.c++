@@ -1,6 +1,10 @@
 #include "Game.hpp"
+#include "Components.hpp"
 #include <iostream>
 #include <ctime>
+#include <memory>
+#include <string>
+#define _USE_MATH_DEFINES // before cmath (for window)
 #include <cmath>
 #include <fstream>
 
@@ -19,10 +23,11 @@ void Game::s_Render()
         
         win.draw(e->shape->circ);
     }
+    win.draw(text);
     win.display();
 }
 
-void Game::s_Input(sf::Event event)
+void Game::s_Input(sf::Event &event)
 {   
     while (win.pollEvent(event)) {
         //Fullscreen or Windowed
@@ -118,10 +123,14 @@ void Game::s_EnemySpawner()
 
 void Game::s_Collision()
 {
+    float player_Rad = player->collision->radius;
+    sf::Vector2f player_mid = player->shape->circ.getPosition();
+    Vec2 player_pos(static_cast <float> (player_mid.x), static_cast <float> (player_mid.y));
+
     for (auto &b : em.getEntities("Bullet")) {
         float b_Radius = b->collision->radius;
         sf::Vector2f bullet_middle =  b->shape->circ.getPosition();
-        Vec2 b_pos(static_cast <float> (bullet_middle.x),static_cast <float> (bullet_middle.y));
+        Vec2 b_pos(static_cast <float> (bullet_middle.x), static_cast <float> (bullet_middle.y));
         for (auto &e : em.getEntities("Enemy")) {
             float e_Radius = e->collision->radius;
             
@@ -131,6 +140,7 @@ void Game::s_Collision()
             float Dist = b_pos.dist_power2(e_pos);
             float Rad2 = (b_Radius + e_Radius) * (b_Radius + e_Radius);
             if (Dist < Rad2) {
+                score += e->score->points;
                 e->destroy();
                 b->destroy();
                 spawnSmallEnemy();
@@ -146,13 +156,13 @@ void Game::s_Collision()
             float Dist = b_pos.dist_power2(se_pos);
             float Rad2 = (b_Radius + se_Radius) * (b_Radius + se_Radius);
             if (Dist < Rad2) {
+                score += se->score->points;
                 se->destroy();
                 b->destroy();
             }
         }
     }
     
-    //Enemy and Border
     for (auto &e : em.getEntities("Enemy")) {
         if (e->shape->circ.getPosition().x - e->collision->radius < 0.f) {
             e->transform->velocity.x *= -1;
@@ -165,6 +175,18 @@ void Game::s_Collision()
         }
         if (e->shape->circ.getPosition().y + e->collision->radius > static_cast <float> (win.getSize().y)) {
             e->transform->velocity.y *= -1;
+        }
+
+        float e_Rad = e->collision->radius;
+        sf::Vector2f e_mid = e->shape->circ.getPosition();
+        Vec2 e_pos(static_cast <float> (e_mid.x), static_cast <float> (e_mid.y));
+        
+        float Dists = player_pos.dist_power2(e_pos);
+        float Rad2s = (player_Rad + e_Rad) * (player_Rad + e_Rad);
+        
+        if (Dists < Rad2s) {
+            player->transform->position = Vec2(static_cast <float> (win.getSize().x) / 2, static_cast <float> (win.getSize().y) / 2);
+            score = 0;
         }
     }
 }
@@ -187,6 +209,7 @@ void Game::s_LifeSpanInit()
     }
 }
 
+
 void Game::run()
 {
     spawnPlayer();
@@ -196,7 +219,7 @@ void Game::run()
         
         s_Input(event);
         em.update();
-        
+        upScore();
         if (!is_paused) {
             s_EnemySpawner();
             s_Collision();
@@ -215,7 +238,7 @@ void Game::spawnPlayer()
     auto entity = em.addEntity("Player");
     
     //create entity respectively at x,y; give them speed; at angle a
-    entity->transform = std::make_shared <c_Transform> (Vec2(win.getSize().x / 2, win.getSize().y / 2), Vec2(P_config.S, P_config.S), 0.f);
+    entity->transform = std::make_shared <c_Transform> (Vec2(static_cast<float>(win.getSize().x) / 2, static_cast<float>(win.getSize().y) / 2), Vec2(P_config.S, P_config.S), 0.f);
     //create shape for the entity (radius, number of vertices, fill color, outline color, thickness)
     entity->shape = std::make_shared <c_Shape> (P_config.S_rad, P_config.Verts, sf::Color (P_config.Fill_R, P_config.Fill_G, P_config.Fill_B), 
     sf::Color (P_config.Outline_R, P_config.Outline_G, P_config.Outline_B), P_config.Outline_T);
@@ -261,6 +284,8 @@ void Game::spawnEnemy()
         
     entity->transform = std::make_shared <c_Transform> (Vec2(ex, ey), Vec2(rando1, rando2), 0);
 
+    entity->score = std::make_shared <c_Score> (100);
+
     //record the frame that the enemy spawn
     lastEnemySpawnTime = currentFrame;
 }
@@ -286,6 +311,8 @@ void Game::spawnSmallEnemy()
 
                 small_e->transform->velocity.x = 3 * std::cos(toRad);
                 small_e->transform->velocity.y = 3 * std::sin(toRad);
+
+                small_e->score = std::make_shared <c_Score> (200);
             }
         }
     }
@@ -328,7 +355,7 @@ void Game::init(const std::string &path)
         return;
     }
 
-    win.create(sf::VideoMode(1280, 720), "Real Game");
+    win.create(sf::VideoMode::getDesktopMode(), "Real Game", sf::Style::Fullscreen);
     win.setFramerateLimit(60);
     
     std::string type, font_path;
@@ -362,3 +389,10 @@ void Game::init(const std::string &path)
     }
 }
 
+void Game::upScore() {
+    text.setFont(font);
+    std::string str_score = std::to_string(score);
+    text.setString(str_score);
+    text.setCharacterSize(24);
+    text.setPosition(0, 0);
+}

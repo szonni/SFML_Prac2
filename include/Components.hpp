@@ -41,10 +41,10 @@ public:
 class c_Score {
 
 public:
-    int score = 0;
+    int points = 0;
 
     c_Score(int s)
-        : score(s) {}
+        : points(s) {}
 };
 
 class c_LifeSpan {
