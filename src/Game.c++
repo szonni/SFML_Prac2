@@ -66,8 +66,14 @@ void Game::s_Input(sf::Event &event)
 
         //shoot
         if (event.type == sf::Event::MouseButtonPressed) {
-            if (event.mouseButton.button == sf::Mouse::Left){
+            if (event.mouseButton.button == sf::Mouse::Left) {
                 spawnBullet();
+            }
+        }
+        // Special attack
+        if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.mouseButton.button == sf::Mouse::Right) {
+                Special();  
             }
         }
     }
@@ -126,7 +132,8 @@ void Game::s_Collision()
     float player_Rad = player->collision->radius;
     sf::Vector2f player_mid = player->shape->circ.getPosition();
     Vec2 player_pos(static_cast <float> (player_mid.x), static_cast <float> (player_mid.y));
-
+    
+    // Bullet and Enemy
     for (auto &b : em.getEntities("Bullet")) {
         float b_Radius = b->collision->radius;
         sf::Vector2f bullet_middle =  b->shape->circ.getPosition();
@@ -163,6 +170,7 @@ void Game::s_Collision()
         }
     }
     
+    // Player and Enemy
     for (auto &e : em.getEntities("Enemy")) {
         if (e->shape->circ.getPosition().x - e->collision->radius < 0.f) {
             e->transform->velocity.x *= -1;
@@ -193,9 +201,36 @@ void Game::s_Collision()
 
 void Game::s_LifeSpanInit()
 {   
+    //static declaration will be initialized only once
+    static unsigned int fade = 255 / B_config.L_Span;
+
     //Bullet life span
     for (auto &b : em.getEntities("Bullet")) {
         b->life_span->remain -= 1;
+        sf::Color fill = b->shape->circ.getFillColor();
+        sf::Color outlineColor = b->shape->circ.getOutlineColor();
+
+        if (b->life_span->total == B_config.L_Span) {
+            fill.a -= fade;
+            b->shape->circ.setFillColor(fill);
+        
+            outlineColor.a -= fade;
+            b->shape->circ.setOutlineColor(outlineColor);
+
+
+        } 
+        else {
+            fill.a = static_cast<float>(fill.a);
+            outlineColor.a = static_cast<float>(fill.a);      
+
+            fill.a -= 255.f / 360.f;
+            b->shape->circ.setFillColor(fill);
+          
+            outlineColor.a -= 255.f / 360.f;
+            b->shape->circ.setOutlineColor(outlineColor);
+
+        }
+
         if (b->life_span->remain == 0) {
             b->destroy();
         }
@@ -344,6 +379,14 @@ void Game::spawnBullet()
     
 }
 
+void Game::upScore()
+{
+    text.setFont(font);
+    std::string str_score = std::to_string(score);
+    text.setString(str_score);
+    text.setPosition(0, 0);
+}
+
 void Game::init(const std::string &path)
 {
     //initialized file reader
@@ -389,10 +432,23 @@ void Game::init(const std::string &path)
     }
 }
 
-void Game::upScore() {
-    text.setFont(font);
-    std::string str_score = std::to_string(score);
-    text.setString(str_score);
-    text.setCharacterSize(24);
-    text.setPosition(0, 0);
+void Game::Special()
+{
+    for (int i = 1; i <= 36; i++) {
+        auto bullet = em.addEntity("Bullet");
+        
+        bullet->transform = std::make_shared <c_Transform> (Vec2(player->transform->position.x, player->transform->position.y), Vec2(0,0), 360 / 36 * i);
+
+        bullet->shape = std::make_shared <c_Shape> (B_config.S_rad, B_config.C_rad, sf::Color (B_config.Fill_R, B_config.Fill_G, B_config.Fill_B),
+        sf::Color (B_config.Outline_R, B_config.Outline_G, B_config.Outline_B), B_config.Outline_T);
+
+        bullet->collision = std::make_shared <c_Collision> (B_config.C_rad);
+
+        bullet->life_span = std::make_shared <c_LifeSpan> (255);
+
+        float toRad = bullet->transform->angle * M_PI / 180;
+
+        bullet->transform->velocity.x = 1.5 * std::cos(toRad);
+        bullet->transform->velocity.y = 1.5 * std::sin(toRad);
+    }
 }

@@ -54,5 +54,6 @@ public:
   void spawnEnemy();
   void spawnSmallEnemy();
   void spawnBullet();
+  void Special();
   void upScore();
 };
