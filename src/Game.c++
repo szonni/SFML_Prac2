@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Components.hpp"
+#include "Vec2.hpp"
 #include <iostream>
 #include <ctime>
 #include <memory>
@@ -18,9 +19,9 @@ void Game::s_Render()
     win.clear();
     for (auto &e : em.getEntities()) {
         e->shape->circ.setPosition(e->transform->position.x, e->transform->position.y);
-        
+ 
         e->shape->circ.setRotation(e->transform->angle);
-        
+ 
         win.draw(e->shape->circ);
     }
     win.draw(text);
@@ -29,6 +30,10 @@ void Game::s_Render()
 
 void Game::s_Input(sf::Event &event)
 {   
+    static sf::Clock timer;
+    static bool canUseSpecial = true;
+    const float cooldown = 10.f;
+
     while (win.pollEvent(event)) {
         //Fullscreen or Windowed
         if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F11) {
@@ -72,10 +77,15 @@ void Game::s_Input(sf::Event &event)
         }
         // Special attack
         if (event.type == sf::Event::MouseButtonPressed) {
-            if (event.mouseButton.button == sf::Mouse::Right) {
-                Special();  
+            if (event.mouseButton.button == sf::Mouse::Right && canUseSpecial) {
+                Special();
+                canUseSpecial = false;
+                timer.restart();
             }
         }
+    }
+    if (canUseSpecial == false && timer.getElapsedTime().asSeconds() >= cooldown) {
+        canUseSpecial = true;
     }
 }
 
@@ -113,6 +123,15 @@ void Game::s_Movement()
         small_enemy->transform->position.y += small_enemy->transform->velocity.y;
     }
     
+    // Nuke expansion
+    for (auto &nuke : em.getEntities("Nuke")) {
+        float rad = nuke->shape->circ.getRadius();
+        rad += 1.5f;
+        nuke->shape->circ.setOrigin(rad, rad);
+        nuke->shape->circ.setRadius(rad);
+        nuke->collision->radius = rad;
+    }
+    
     //Entity rotation
     for (auto &e : em.getEntities()) {
         e->transform->angle += 1.f;
@@ -140,7 +159,6 @@ void Game::s_Collision()
         Vec2 b_pos(static_cast <float> (bullet_middle.x), static_cast <float> (bullet_middle.y));
         for (auto &e : em.getEntities("Enemy")) {
             float e_Radius = e->collision->radius;
-            
             sf::Vector2f enemy_middle = e->shape->circ.getPosition();
             Vec2 e_pos(static_cast <float> (enemy_middle.x), static_cast <float> (enemy_middle.y));
 
@@ -170,7 +188,7 @@ void Game::s_Collision()
         }
     }
     
-    // Player and Enemy
+    // Player and Enemy and border
     for (auto &e : em.getEntities("Enemy")) {
         if (e->shape->circ.getPosition().x - e->collision->radius < 0.f) {
             e->transform->velocity.x *= -1;
@@ -197,6 +215,39 @@ void Game::s_Collision()
             score = 0;
         }
     }
+    
+    for (auto &n : em.getEntities("Nuke")) {
+        float n_rad = n->collision->radius;
+        sf::Vector2f n_mid = n->shape->circ.getPosition();
+        Vec2 n_pos(static_cast <float> (n_mid.x), static_cast <float> (n_mid.y));
+
+        for (auto &e : em.getEntities("Enemy")) {
+            float e_rad = e->collision->radius;
+            sf::Vector2f e_mid = e->shape->circ.getPosition();
+            Vec2 e_pos(static_cast <float> (e_mid.x), static_cast <float> (e_mid.y));
+
+            float Distn = n_pos.dist_power2(e_pos);
+            float Rad2n = (n_rad + e_rad) * (n_rad + e_rad);
+
+            if (Distn < Rad2n) {
+                score += e->score->points;
+                e->destroy();
+                spawnSmallEnemy();
+            }
+        }
+         for (auto &se : em.getEntities("SmallEnemy")) {
+            float se_Radius = se->collision->radius;
+            sf::Vector2f se_middle = se->shape->circ.getPosition();
+            Vec2 se_pos(static_cast <float> (se_middle.x), static_cast <float> (se_middle.y));
+
+            float Dist = n_pos.dist_power2(se_pos);
+            float Rad2 = (n_rad + se_Radius) * (n_rad + se_Radius);
+            if (Dist < Rad2) {
+                score += se->score->points;
+                se->destroy();
+            }
+        }   
+    }
 }
 
 void Game::s_LifeSpanInit()
@@ -209,27 +260,11 @@ void Game::s_LifeSpanInit()
         b->life_span->remain -= 1;
         sf::Color fill = b->shape->circ.getFillColor();
         sf::Color outlineColor = b->shape->circ.getOutlineColor();
-
-        if (b->life_span->total == B_config.L_Span) {
-            fill.a -= fade;
-            b->shape->circ.setFillColor(fill);
         
-            outlineColor.a -= fade;
-            b->shape->circ.setOutlineColor(outlineColor);
-
-
-        } 
-        else {
-            fill.a = static_cast<float>(fill.a);
-            outlineColor.a = static_cast<float>(fill.a);      
-
-            fill.a -= 255.f / 360.f;
-            b->shape->circ.setFillColor(fill);
-          
-            outlineColor.a -= 255.f / 360.f;
-            b->shape->circ.setOutlineColor(outlineColor);
-
-        }
+        fill.a -= fade;
+        b->shape->circ.setFillColor(fill);
+        outlineColor.a -= fade;
+        b->shape->circ.setOutlineColor(outlineColor);
 
         if (b->life_span->remain == 0) {
             b->destroy();
@@ -240,6 +275,19 @@ void Game::s_LifeSpanInit()
         se->life_span->remain -= 1;
         if (se->life_span->remain == 0) {
             se->destroy();
+        }
+    }
+    
+    // Nuke Life Span
+    for (auto &n : em.getEntities("Nuke")) {
+        n->life_span->remain -= 1;
+        sf::Color outline = n->shape->circ.getOutlineColor();
+        outline.a = static_cast<float>(outline.a);
+        
+        outline.a -= 1.f;
+        n->shape->circ.setOutlineColor(outline);
+        if (n->life_span->remain == 0) {
+            n->destroy();
         }
     }
 }
@@ -387,6 +435,20 @@ void Game::upScore()
     text.setPosition(0, 0);
 }
 
+void Game::Special()
+{
+    auto nuke = em.addEntity("Nuke");
+        
+    nuke->transform = std::make_shared <c_Transform> (Vec2(player->transform->position.x, player->transform->position.y), Vec2(0,0), 0);
+
+    nuke->shape = std::make_shared <c_Shape> (B_config.S_rad, 100, sf::Color (0, 0, 0, 0),
+    sf::Color (B_config.Outline_R, B_config.Outline_G, B_config.Outline_B), B_config.Outline_T * 4);
+
+    nuke->collision = std::make_shared <c_Collision> (B_config.C_rad);
+
+    nuke->life_span = std::make_shared <c_LifeSpan> (255);
+}
+
 void Game::init(const std::string &path)
 {
     //initialized file reader
@@ -429,26 +491,5 @@ void Game::init(const std::string &path)
             file >> B_config.S_rad >> B_config.C_rad >> B_config.S >> B_config.Fill_R >> B_config.Fill_G >> B_config.Fill_B >> 
             B_config.Outline_R >> B_config.Outline_G >> B_config.Outline_B >> B_config.Outline_T >> B_config.Verts >> B_config.L_Span;
         }
-    }
-}
-
-void Game::Special()
-{
-    for (int i = 1; i <= 36; i++) {
-        auto bullet = em.addEntity("Bullet");
-        
-        bullet->transform = std::make_shared <c_Transform> (Vec2(player->transform->position.x, player->transform->position.y), Vec2(0,0), 360 / 36 * i);
-
-        bullet->shape = std::make_shared <c_Shape> (B_config.S_rad, B_config.C_rad, sf::Color (B_config.Fill_R, B_config.Fill_G, B_config.Fill_B),
-        sf::Color (B_config.Outline_R, B_config.Outline_G, B_config.Outline_B), B_config.Outline_T);
-
-        bullet->collision = std::make_shared <c_Collision> (B_config.C_rad);
-
-        bullet->life_span = std::make_shared <c_LifeSpan> (255);
-
-        float toRad = bullet->transform->angle * M_PI / 180;
-
-        bullet->transform->velocity.x = 1.5 * std::cos(toRad);
-        bullet->transform->velocity.y = 1.5 * std::sin(toRad);
     }
 }
