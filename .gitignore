@@ -5,5 +5,4 @@ main
 CMakeLists.txt
 *.json
 .cache
-build
 *.ps1
